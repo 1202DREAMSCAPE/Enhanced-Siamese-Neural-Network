@@ -40,7 +40,7 @@ history = model.fit(
 distances = model.predict(test_data)  # Predicted distances
 
 # Apply a threshold to classify distances
-threshold = 0.5  # You can adjust this based on validation results
+threshold = 0.5  
 predictions = (distances < threshold).astype(int)
 
 # Compute metrics

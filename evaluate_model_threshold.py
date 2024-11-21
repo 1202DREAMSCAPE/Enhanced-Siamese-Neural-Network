@@ -31,32 +31,34 @@ test_data, test_labels = generator.get_test_data()
 # Predict distances
 distances = model.predict(test_data)
 
-# Apply the optimal threshold for classification
-threshold = 0.4 
-predictions = (distances < threshold).astype(int)
+# Evaluate thresholds
+thresholds = np.arange(0.1, 0.9, 0.1)  # Thresholds from 0.1 to 0.9
+metrics = []
 
-# Evaluate metrics
-roc_auc = roc_auc_score(test_labels, distances)
-accuracy = accuracy_score(test_labels, predictions)
-precision = precision_score(test_labels, predictions)
-recall = recall_score(test_labels, predictions)
-f1 = f1_score(test_labels, predictions)
+for t in thresholds:
+    predictions = (distances < t).astype(int)
+    cm = confusion_matrix(test_labels, predictions)
+    precision = precision_score(test_labels, predictions)
+    recall = recall_score(test_labels, predictions)
+    f1 = f1_score(test_labels, predictions)
+    accuracy = accuracy_score(test_labels, predictions)
+    metrics.append((t, precision, recall, f1, accuracy))
+    
+    print(f"Threshold: {t:.2f}")
+    print(f"Confusion Matrix:\n{cm}")
+    print(f"Precision: {precision:.3f}, Recall: {recall:.3f}, F1-Score: {f1:.3f}, Accuracy: {accuracy:.3f}")
+    print("-" * 50)
 
-# Print metrics
-print(f"Threshold: {threshold}")
-print(f"ROC-AUC: {roc_auc}")
-print(f"Accuracy: {accuracy}")
-print(f"Precision: {precision}")
-print(f"Recall: {recall}")
-print(f"F1-Score: {f1}")
+# Plot F1-Score and Accuracy vs Threshold
+thresholds, precisions, recalls, f1_scores, accuracies = zip(*metrics)
 
-# Confusion Matrix
-cm = confusion_matrix(test_labels, predictions)
-
-# Plot the confusion matrix
-plt.figure(figsize=(6, 6))
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["Forged", "Genuine"], yticklabels=["Forged", "Genuine"])
-plt.xlabel("Predicted")
-plt.ylabel("True")
-plt.title(f"Confusion Matrix (Threshold = {threshold})")
+plt.figure(figsize=(10, 5))
+plt.plot(thresholds, f1_scores, label="F1-Score", marker="o")
+plt.plot(thresholds, accuracies, label="Accuracy", marker="o")
+plt.axvline(x=0.5, color='r', linestyle='--', label="Threshold=0.5")
+plt.xlabel("Threshold")
+plt.ylabel("Score")
+plt.title("Threshold vs F1-Score and Accuracy")
+plt.legend()
+plt.grid()
 plt.show()
