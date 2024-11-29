@@ -2,6 +2,7 @@ import numpy as np
 import os
 from tensorflow.keras.preprocessing import image
 import random
+from itertools import combinations
 
 # Ensure reproducibility
 np.random.seed(1337)
@@ -38,9 +39,16 @@ class SignatureDataGenerator:
             train_writers = dataset_info["train_writers"]
             test_writers = dataset_info["test_writers"]
 
-            # Store writers for training and testing
-            self.train_writers.extend([(dataset_path, writer) for writer in train_writers])
-            self.test_writers.extend([(dataset_path, writer) for writer in test_writers])
+            # Validate and store writers for training and testing
+            for writer in train_writers + test_writers:
+                writer_path = os.path.join(dataset_path, f"writer_{writer:03d}")
+                if not os.path.exists(writer_path):
+                    print(f"Warning: Writer directory {writer_path} not found.")
+                else:
+                    if writer in train_writers:
+                        self.train_writers.append((dataset_path, writer))
+                    elif writer in test_writers:
+                        self.test_writers.append((dataset_path, writer))
 
     def preprocess_image(self, img_path):
         """
@@ -79,20 +87,20 @@ class SignatureDataGenerator:
         forged_files = [f for f in sorted(os.listdir(forged_path)) if os.path.isfile(os.path.join(forged_path, f))]
 
         # Create positive pairs (genuine-genuine)
-        positive_pairs = []
-        for i in range(len(genuine_files)):
-            for j in range(i + 1, len(genuine_files)):
-                img1 = self.preprocess_image(os.path.join(genuine_path, genuine_files[i]))
-                img2 = self.preprocess_image(os.path.join(genuine_path, genuine_files[j]))
-                positive_pairs.append((img1, img2, 1))
+        positive_pairs = [
+            (self.preprocess_image(os.path.join(genuine_path, f1)),
+             self.preprocess_image(os.path.join(genuine_path, f2)),
+             1)
+            for f1, f2 in combinations(genuine_files, 2)
+        ]
 
         # Create negative pairs (genuine-forged)
-        negative_pairs = []
-        for genuine_img in genuine_files:
-            for forged_img in forged_files:
-                img1 = self.preprocess_image(os.path.join(genuine_path, genuine_img))
-                img2 = self.preprocess_image(os.path.join(forged_path, forged_img))
-                negative_pairs.append((img1, img2, 0))
+        negative_pairs = [
+            (self.preprocess_image(os.path.join(genuine_path, genuine_img)),
+             self.preprocess_image(os.path.join(forged_path, forged_img)),
+             0)
+            for genuine_img in genuine_files for forged_img in forged_files
+        ]
 
         return positive_pairs + negative_pairs
 
@@ -111,9 +119,9 @@ class SignatureDataGenerator:
         random.shuffle(train_pairs)
 
         # Split pairs into inputs and labels
-        X1 = np.array([pair[0] for pair in train_pairs])
-        X2 = np.array([pair[1] for pair in train_pairs])
-        y = np.array([pair[2] for pair in train_pairs])
+        X1 = np.array([pair[0] for pair in train_pairs], dtype=np.float32)
+        X2 = np.array([pair[1] for pair in train_pairs], dtype=np.float32)
+        y = np.array([pair[2] for pair in train_pairs], dtype=np.int8)
 
         return [X1, X2], y
 
@@ -129,8 +137,8 @@ class SignatureDataGenerator:
             test_pairs.extend(self.generate_pairs(dataset_path, writer))
 
         # Split pairs into inputs and labels
-        X1 = np.array([pair[0] for pair in test_pairs])
-        X2 = np.array([pair[1] for pair in test_pairs])
-        y = np.array([pair[2] for pair in test_pairs])
+        X1 = np.array([pair[0] for pair in test_pairs], dtype=np.float32)
+        X2 = np.array([pair[1] for pair in test_pairs], dtype=np.float32)
+        y = np.array([pair[2] for pair in test_pairs], dtype=np.int8)
 
         return [X1, X2], y

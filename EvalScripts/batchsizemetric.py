@@ -11,23 +11,27 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from SigNet_v1 import create_siamese_network
 from SignatureDataGenerator import SignatureDataGenerator
 
-# Enable mixed precision for Mac M1 (optional)
+# Enable mixed precision
 set_global_policy('mixed_float16')
+
+# Print mixed precision status
+from tensorflow.keras.mixed_precision import global_policy
+print(f"Mixed precision policy: {global_policy()}")
 
 # Define datasets
 datasets = {
     "CEDAR": {
-        "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
+        "path": "/content/drive/My Drive/Thesis/Dataset/CEDAR",
         "train_writers": list(range(261, 300)),
         "test_writers": list(range(300, 317))
     },
     "BHSig260_Bengali": {
-        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
+        "path": "/content/drive/My Drive/Thesis/Dataset/BHSig260_Bengali",
         "train_writers": list(range(1, 71)),
         "test_writers": list(range(71, 101))
     },
     "BHSig260_Hindi": {
-        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Hindi",
+        "path": "/content/drive/My Drive/Thesis/Dataset/BHSig260_Hindi",
         "train_writers": list(range(101, 213)),
         "test_writers": list(range(213, 261))
     }
@@ -38,13 +42,17 @@ try:
     generator = SignatureDataGenerator(dataset=datasets, img_height=155, img_width=220)
     train_data, train_labels = generator.get_train_data()
     test_data, test_labels = generator.get_test_data()
+
+    # Validate dataset sizes
+    if train_data[0].shape[0] == 0 or test_data[0].shape[0] == 0:
+        raise ValueError("Train or Test data is empty! Please check the dataset or the generator.")
 except Exception as e:
     print(f"Error initializing SignatureDataGenerator: {e}")
     sys.exit(1)
 
-# Verify dataset shapes
-print(f"Train Data Shape: {train_data.shape}, Train Labels Shape: {train_labels.shape}")
-print(f"Test Data Shape: {test_data.shape}, Test Labels Shape: {test_labels.shape}")
+# Print dataset shapes
+print(f"Train Data Shape: X1={train_data[0].shape}, X2={train_data[1].shape}, Labels={train_labels.shape}")
+print(f"Test Data Shape: X1={test_data[0].shape}, X2={test_data[1].shape}, Labels={test_labels.shape}")
 
 # Create and compile the model
 input_shape = (155, 220, 1)
@@ -80,7 +88,16 @@ def test_batch_sizes(model, train_data, train_labels, test_data, test_labels, ba
             history = model.fit(
                 x=train_data, y=train_labels,
                 validation_data=(test_data, test_labels),
-                batch_size=batch_size, epochs=5  # Short training
+                batch_size=batch_size,
+                epochs=5,  # Short training for testing
+                callbacks=[
+                    tf.keras.callbacks.LambdaCallback(
+                        on_epoch_end=lambda epoch, logs: (
+                            print(f"After Epoch {epoch + 1}:"),
+                            log_system_usage()
+                        )
+                    )
+                ]
             )
 
             # Log memory usage after training
@@ -105,7 +122,7 @@ def test_batch_sizes(model, train_data, train_labels, test_data, test_labels, ba
         print(f"Batch size {batch_size}: {time_taken:.2f} seconds")
 
 # Define batch sizes to test
-batch_sizes = [32, 64, 128]
+batch_sizes = [16, 32, 64, 128]
 
 # Run the batch size test
 test_batch_sizes(model, train_data, train_labels, test_data, test_labels, batch_sizes)
