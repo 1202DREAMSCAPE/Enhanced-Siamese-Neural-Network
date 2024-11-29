@@ -4,7 +4,6 @@ from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras import backend as K
 from sklearn.metrics import roc_auc_score, accuracy_score
 
-# Define dataset splits
 datasets = {
     "CEDAR": {
         "path": "/path_to_dataset/CEDAR",
