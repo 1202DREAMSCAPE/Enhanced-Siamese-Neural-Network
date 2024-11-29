@@ -4,19 +4,35 @@ from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras import backend as K
 from sklearn.metrics import roc_auc_score, accuracy_score
 
-# Initialize the generator
+# Define dataset splits
+datasets = {
+    "CEDAR": {
+        "path": "/path_to_dataset/CEDAR",
+        "train_writers": list(range(261, 300)),  # CEDAR train: writer_261 to writer_299
+        "test_writers": list(range(300, 317))   # CEDAR test: writer_300 to writer_316
+    },
+    "BHSig260_Bengali": {
+        "path": "/path_to_dataset/BHSig260_Bengali",
+        "train_writers": list(range(1, 71)),    # Bengali train: writer_001 to writer_070
+        "test_writers": list(range(71, 101))   # Bengali test: writer_071 to writer_100
+    },
+    "BHSig260_Hindi": {
+        "path": "/path_to_dataset/BHSig260_Hindi",
+        "train_writers": list(range(101, 213)),  # Hindi train: writer_101 to writer_212
+        "test_writers": list(range(213, 261))   # Hindi test: writer_213 to writer_260
+    }
+}
+
+# Initialize generator
 generator = SignatureDataGenerator(
-    dataset="/Users/christelle/Downloads/Thesis/Dataset",  # Absolute path to the dataset
-    num_train_writers=4,
-    num_test_writers=1,
+    dataset=datasets,
     img_height=155,
     img_width=220
 )
 
-# Load training and testing data
+# Load data
 train_data, train_labels = generator.get_train_data()
 test_data, test_labels = generator.get_test_data()
-
 # Model setup
 input_shape = (155, 220, 1)  # Image dimensions
 model = create_siamese_network(input_shape)
