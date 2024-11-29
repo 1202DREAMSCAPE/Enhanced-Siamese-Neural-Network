@@ -51,7 +51,7 @@ print(f"ROC-AUC: {roc_auc}")
 print(f"Accuracy: {accuracy}")
 
 # Save the trained model
-model.save("siamese_model.keras")
+model.save("siamese_model1.keras")
 
 # # when you want to load the model again, you can use the following code:
 # from tensorflow.keras.models import load_model

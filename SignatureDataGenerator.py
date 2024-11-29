@@ -75,7 +75,6 @@ class SignatureDataGenerator:
         genuine_files = [f for f in sorted(os.listdir(genuine_path)) if os.path.isfile(os.path.join(genuine_path, f))]
         forged_files = [f for f in sorted(os.listdir(forged_path)) if os.path.isfile(os.path.join(forged_path, f))]
 
-        
         # Create positive pairs (genuine-genuine)
         positive_pairs = []
         for i in range(len(genuine_files)):

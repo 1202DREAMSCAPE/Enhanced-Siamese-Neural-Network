@@ -1,0 +1,50 @@
+metrics for Threshold
+
+Threshold: 0.10
+Confusion Matrix:
+[[492   8]
+ [ 39 186]]
+Precision: 0.959, Recall: 0.827, F1-Score: 0.888, Accuracy: 0.935
+--------------------------------------------------
+Threshold: 0.20
+Confusion Matrix:
+[[486  14]
+ [ 32 193]]
+Precision: 0.932, Recall: 0.858, F1-Score: 0.894, Accuracy: 0.937
+--------------------------------------------------
+Threshold: 0.30
+Confusion Matrix:
+[[476  24]
+ [ 30 195]]
+Precision: 0.890, Recall: 0.867, F1-Score: 0.878, Accuracy: 0.926
+--------------------------------------------------
+Threshold: 0.40
+Confusion Matrix:
+[[471  29]
+ [ 25 200]]
+Precision: 0.873, Recall: 0.889, F1-Score: 0.881, Accuracy: 0.926
+--------------------------------------------------
+Threshold: 0.50
+Confusion Matrix:
+[[463  37]
+ [ 18 207]]
+Precision: 0.848, Recall: 0.920, F1-Score: 0.883, Accuracy: 0.924
+--------------------------------------------------
+Threshold: 0.60
+Confusion Matrix:
+[[453  47]
+ [ 16 209]]
+Precision: 0.816, Recall: 0.929, F1-Score: 0.869, Accuracy: 0.913
+--------------------------------------------------
+Threshold: 0.70
+Confusion Matrix:
+[[443  57]
+ [ 10 215]]
+Precision: 0.790, Recall: 0.956, F1-Score: 0.865, Accuracy: 0.908
+--------------------------------------------------
+Threshold: 0.80
+Confusion Matrix:
+[[439  61]
+ [ 10 215]]
+Precision: 0.779, Recall: 0.956, F1-Score: 0.858, Accuracy: 0.902
+--------------------------------------------------
