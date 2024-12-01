@@ -6,19 +6,19 @@ from sklearn.metrics import roc_auc_score, accuracy_score
 
 datasets = {
     "CEDAR": {
-        "path": "/path_to_dataset/CEDAR",
-        "train_writers": list(range(261, 300)),  # CEDAR train: writer_261 to writer_299
-        "test_writers": list(range(300, 317))   # CEDAR test: writer_300 to writer_316
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
+        "train_writers": list(range(261, 300)),
+        "test_writers": list(range(300, 316))
     },
     "BHSig260_Bengali": {
-        "path": "/path_to_dataset/BHSig260_Bengali",
-        "train_writers": list(range(1, 71)),    # Bengali train: writer_001 to writer_070
-        "test_writers": list(range(71, 101))   # Bengali test: writer_071 to writer_100
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
+        "train_writers": list(range(1, 71)),
+        "test_writers": list(range(71, 100))
     },
     "BHSig260_Hindi": {
-        "path": "/path_to_dataset/BHSig260_Hindi",
-        "train_writers": list(range(101, 213)),  # Hindi train: writer_101 to writer_212
-        "test_writers": list(range(213, 261))   # Hindi test: writer_213 to writer_260
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Hindi",
+        "train_writers": list(range(101, 213)),
+        "test_writers": list(range(213, 260))
     }
 }
 
@@ -48,7 +48,7 @@ model.summary()
 history = model.fit(
     x=train_data, y=train_labels,
     validation_data=(test_data, test_labels),
-    batch_size=4, epochs=20
+    batch_size=32, epochs=20
 )
 
 # Evaluate the model
@@ -66,7 +66,7 @@ print(f"ROC-AUC: {roc_auc}")
 print(f"Accuracy: {accuracy}")
 
 # Save the trained model
-model.save("siamese_model1.keras")
+model.save("signet.keras")
 
 # # when you want to load the model again, you can use the following code:
 # from tensorflow.keras.models import load_model
