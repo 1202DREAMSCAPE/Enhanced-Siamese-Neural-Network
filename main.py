@@ -1,111 +1,169 @@
+import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, precision_recall_curve
-import time
-import psutil
-
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, roc_auc_score, roc_curve
+from tensorflow.keras.optimizers import RMSprop
 from SignatureDataGenerator import SignatureDataGenerator
 from SigNet_v1 import create_siamese_network
-from tensorflow.keras.optimizers import RMSprop
-from tensorflow.keras import backend as K
-from sklearn.metrics import roc_auc_score, accuracy_score
+from tensorflow.keras.losses import Loss
+import tensorflow.keras.backend as K
+import time
 
+# Define Contrastive Loss
+class ContrastiveLoss(Loss):
+    def __init__(self, margin=1.0, **kwargs):
+        """
+        Contrastive loss function for Siamese Network.
+
+        Args:
+            margin: The margin value for dissimilar pairs.
+        """
+        super(ContrastiveLoss, self).__init__(**kwargs)
+        self.margin = margin
+
+    def call(self, y_true, y_pred):
+        """
+        Compute the contrastive loss.
+
+        Args:
+            y_true: Ground truth labels (0 for similar, 1 for dissimilar).
+            y_pred: Predicted distances between embeddings.
+
+        Returns:
+            Loss value.
+        """
+        y_true = K.cast(y_true, y_pred.dtype)
+        positive_loss = (1 - y_true) * K.square(y_pred)
+        negative_loss = y_true * K.square(K.maximum(self.margin - y_pred, 0))
+        return K.mean(positive_loss + negative_loss)
+
+# Dataset Configuration
 datasets = {
     "CEDAR": {
         "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
         "train_writers": list(range(261, 300)),
         "test_writers": list(range(300, 316))
     },
-    "BHSig260_Bengali": {
-        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
-        "train_writers": list(range(1, 71)),
-        "test_writers": list(range(71, 100))
-    },
-    "BHSig260_Hindi": {
-        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Hindi",
-        "train_writers": list(range(101, 213)),
-        "test_writers": list(range(213, 260))
-    }
 }
 
-# Initialize generator
-generator = SignatureDataGenerator(
-    dataset=datasets,
-    img_height=155,
-    img_width=220
-)
+# Function to load data
+def load_data(dataset_name, dataset_config):
+    generator = SignatureDataGenerator(
+        dataset={
+            dataset_name: {
+                "path": dataset_config["path"],
+                "train_writers": dataset_config["train_writers"],
+                "test_writers": dataset_config["test_writers"]
+            }
+        },
+        img_height=155,
+        img_width=220
+    )
+    train_data, train_labels = generator.get_train_data()
+    test_data, test_labels = generator.get_test_data()
 
-# Load data
-train_data, train_labels = generator.load_data("train")
-test_data, test_labels = generator.load_data("test")
+    return train_data, train_labels, test_data, test_labels
 
-# Create Siamese network
-model = create_siamese_network(input_shape=(155, 220, 1))
-model.compile(optimizer=RMSprop(learning_rate=0.001), loss="binary_crossentropy", metrics=["accuracy"])
+# Function to visualize class imbalance
+def plot_class_imbalance(train_labels, test_labels, dataset_name):
+    train_counts = np.bincount(train_labels)
+    test_counts = np.bincount(test_labels)
 
-# Train model
-model.fit(train_data, train_labels, epochs=10, batch_size=32, validation_split=0.2)
+    print(f"Class Imbalance Summary for {dataset_name} Dataset:")
+    print(f"Training Data: {train_counts[0]} Genuine, {train_counts[1]} Forged")
+    print(f"Testing Data: {test_counts[0]} Genuine, {test_counts[1]} Forged")
 
-# Evaluate model
-y_pred = model.predict(test_data)
-y_pred_labels = (y_pred > 0.5).astype(int)
+    labels = ['Genuine', 'Forged']
+    x = np.arange(len(labels))
 
-# Function to evaluate and log metrics
-def log_metrics(y_true, y_pred, y_prob):
-    # Calculate classification metrics
-    report = classification_report(y_true, y_pred, target_names=["Genuine", "Forged"])
-    cm = confusion_matrix(y_true, y_pred)
-    auc_pr = roc_auc_score(y_true, y_prob)
-    precision, recall, _ = precision_recall_curve(y_true, y_prob)
-    
-    print("\nClassification Report:\n", report)
-    print("Confusion Matrix:\n", cm)
-    print("AUC-PR: {:.4f}".format(auc_pr))
-    
-# Simulate noise for noise sensitivity testing
-def simulate_noise(images, noise_factor=0.1):
-    noisy_images = images + noise_factor * np.random.normal(loc=0.0, scale=1.0, size=images.shape)
-    noisy_images = np.clip(noisy_images, 0., 1.)
-    return noisy_images
+    plt.figure(figsize=(8, 5))
+    plt.bar(x - 0.2, train_counts, width=0.4, label='Train', color='blue', alpha=0.7)
+    plt.bar(x + 0.2, test_counts, width=0.4, label='Test', color='orange', alpha=0.7)
+    plt.xticks(x, labels)
+    plt.xlabel('Class')
+    plt.ylabel('Sample Count')
+    plt.title(f'Class Imbalance - {dataset_name}')
+    plt.legend()
+    plt.show()
 
-# Monitor computational scalability
-def monitor_computation(model, data):
-    process = psutil.Process()
-    start_memory = process.memory_info().rss
+# Updated function to compute and display metrics
+def compute_metrics(y_true, y_pred, dataset_name):
+    """
+    Computes classification metrics and prints results.
+
+    Args:
+        y_true: Ground truth labels.
+        y_pred: Predicted probabilities.
+
+    Returns:
+        None
+    """
+    y_pred_labels = (y_pred > 0.5).astype(int)
+    accuracy = accuracy_score(y_true, y_pred_labels)
+    precision = precision_score(y_true, y_pred_labels)
+    recall = recall_score(y_true, y_pred_labels)
+    f1 = f1_score(y_true, y_pred_labels)
+    auc = roc_auc_score(y_true, y_pred)
+
+    # Biometric-specific metrics
+    gar = recall  # Genuine Acceptance Rate
+    frr = 1 - gar  # False Rejection Rate
+
+    print("\n--- Evaluation Metrics ---")
+    print(f"Accuracy: {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall (GAR): {recall:.4f}")
+    print(f"F1-Score: {f1:.4f}")
+    print(f"ROC-AUC: {auc:.4f}")
+    print(f"Genuine Acceptance Rate (GAR): {gar:.4f}")
+    print(f"False Rejection Rate (FRR): {frr:.4f}")
+
+    print("\nClassification Report:")
+    print(classification_report(y_true, y_pred_labels, target_names=["Genuine", "Forged"]))
+
+# Function to plot ROC curve
+def plot_roc_curve(y_true, y_prob, dataset_name):
+    fpr, tpr, _ = roc_curve(y_true, y_prob)
+    auc = roc_auc_score(y_true, y_prob)
+
+    plt.figure()
+    plt.plot(fpr, tpr, label=f"ROC curve (AUC = {auc:.4f})", color="blue")
+    plt.plot([0, 1], [0, 1], "k--", color="gray")
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title(f"ROC Curve - {dataset_name}")
+    plt.legend(loc="lower right")
+    plt.show()
+
+# Main Script
+for dataset_name, dataset_config in datasets.items():
+    print(f"\n--- Processing Dataset: {dataset_name} ---")
+
+    # Load dataset
+    train_data, train_labels, test_data, test_labels = load_data(dataset_name, dataset_config)
+
+    # Visualize class imbalance
+    plot_class_imbalance(train_labels, test_labels, dataset_name)
+
+    # Create and compile model
+    model = create_siamese_network(input_shape=(155, 220, 1))
+    contrastive_loss = ContrastiveLoss(margin=1.0)
+    model.compile(optimizer=RMSprop(learning_rate=0.001), loss=contrastive_loss)
+
+    # Train model
+    print(f"Training on {dataset_name}...")
     start_time = time.time()
-    
-    # Simulate a batch process
-    predictions = model.predict(data)
-    
+    model.fit(train_data, train_labels, epochs=10, batch_size=32, validation_split=0.2, verbose=1)
     end_time = time.time()
-    end_memory = process.memory_info().rss
-    memory_used = (end_memory - start_memory) / (1024 ** 2)  # Convert to MB
-    elapsed_time = end_time - start_time
-    
-    print(f"Memory Used: {memory_used:.2f} MB")
-    print(f"Time Taken: {elapsed_time:.2f} seconds")
-    return predictions
 
-# Include hyperparameter sensitivity testing
-def evaluate_hyperparameters(model, train_data, val_data):
-    for lr in [0.01, 0.001, 0.0001]:
-        for batch_size in [16, 32, 64]:
-            print(f"Evaluating with Learning Rate: {lr}, Batch Size: {batch_size}")
-            model.compile(optimizer=RMSprop(learning_rate=lr), loss="binary_crossentropy", metrics=["accuracy"])
-            start_time = time.time()
-            model.fit(train_data, batch_size=batch_size, epochs=5, validation_data=val_data, verbose=0)
-            end_time = time.time()
-            print(f"Training Time: {end_time - start_time:.2f} seconds")
+    # Evaluate model
+    print(f"Evaluating on {dataset_name}...")
+    y_pred = model.predict(test_data)
 
-# Log metrics
-log_metrics(test_labels, y_pred_labels, y_pred)
+    # Compute and display metrics
+    compute_metrics(test_labels, y_pred, dataset_name)
 
-# Simulate noise and re-evaluate
-noisy_test_data = simulate_noise(test_data, noise_factor=0.1)
-noisy_predictions = model.predict(noisy_test_data)
-log_metrics(test_labels, (noisy_predictions > 0.5).astype(int), noisy_predictions)
+    # Plot ROC curve
+    plot_roc_curve(test_labels, y_pred, dataset_name)
 
-# Monitor computation
-monitor_computation(model, test_data)
-
-# Hyperparameter evaluation (example)
-evaluate_hyperparameters(model, train_data, (test_data, test_labels))
+    # Display execution time
+    print(f"Training and Evaluation Time: {end_time - start_time:.2f} seconds")
