@@ -142,7 +142,7 @@ for dataset_name, dataset_config in datasets.items():
     train_data, train_labels, test_data, test_labels = load_data(dataset_name, dataset_config)
 
     # Visualize class imbalance
-    plot_class_imbalance(train_labels, test_labels, dataset_name)
+   # plot_class_imbalance(train_labels, test_labels, dataset_name)
 
     # Create and compile model
     model = create_siamese_network(input_shape=(155, 220, 1))
@@ -152,7 +152,7 @@ for dataset_name, dataset_config in datasets.items():
     # Train model
     print(f"Training on {dataset_name}...")
     start_time = time.time()
-    model.fit(train_data, train_labels, epochs=10, batch_size=32, validation_split=0.2, verbose=1)
+    model.fit(train_data, train_labels, epochs=5, batch_size=8, validation_split=0.2, verbose=1)
     end_time = time.time()
 
     # Evaluate model

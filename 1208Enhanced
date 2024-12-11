@@ -1,0 +1,22 @@
+--- Class Distribution ---
+Genuine: 22464
+Forged: 11232
+Class distribution for training data in CEDAR:
+
+--- Class Distribution ---
+Genuine: 22464
+Forged: 11232
+Class distribution for testing data in CEDAR:
+
+--- Class Distribution ---
+Genuine: 8640
+Forged: 4140
+
+--- Metrics ---
+Accuracy: 0.9964
+Precision: 1.0000
+Recall: 0.9889
+F1-Score: 0.9944
+Genuine Acceptance Rate (GAR): 0.9889
+False Rejection Rate (FRR): 0.0111
+Training and Evaluation Time: 2988.22 seconds

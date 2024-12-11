@@ -1,0 +1,19 @@
+--- Evaluation Metrics ---
+Accuracy: 0.6761
+Precision: 0.0000
+Recall (GAR): 0.0000
+F1-Score: 0.0000
+ROC-AUC: 0.5000
+Genuine Acceptance Rate (GAR): 0.0000
+False Rejection Rate (FRR): 1.0000
+
+           precision    recall  f1-score   support
+
+     Genuine       0.68      1.00      0.81      8640
+      Forged       0.00      0.00      0.00      4140
+
+    accuracy                           0.68     12780
+   macro avg       0.34      0.50      0.40     12780
+weighted avg       0.46      0.68      0.55     12780
+
+Training and Evaluation Time: 1200.34 seconds

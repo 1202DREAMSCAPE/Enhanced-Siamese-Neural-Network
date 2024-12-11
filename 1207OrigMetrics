@@ -22,3 +22,15 @@ False Rejection Rate (FRR): 1.0000
 weighted avg       0.46      0.68      0.55     12780
 
 Training and Evaluation Time: 2861.67 seconds
+
+
+--- Evaluation Metrics ---
+Accuracy: 0.6761
+Precision: 0.0000
+Recall (GAR): 0.0000
+F1-Score: 0.0000
+ROC-AUC: 0.5000
+Genuine Acceptance Rate (GAR): 0.0000
+False Rejection Rate (FRR): 1.0000
+
+Training and Evaluation Time: 1938.49 seconds
