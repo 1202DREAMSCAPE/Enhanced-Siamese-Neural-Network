@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import accuracy_score, roc_auc_score, roc_curve, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from tensorflow.keras.optimizers import RMSprop
 from SignatureDataGenerator import SignatureDataGenerator
 from SigNet_v1 import create_siamese_network
@@ -24,21 +24,8 @@ class ContrastiveLoss(Loss):
         negative_loss = y_true * tf.square(tf.maximum(self.margin - y_pred, 0))
         return tf.reduce_mean(positive_loss + negative_loss)
 
-# Apply SMOTE (adjusted for paired data)
 # Apply SMOTE with controlled sampling
 def apply_smote(X1, X2, y, sampling_strategy=1.0):
-    """
-    Apply SMOTE to oversample the minority class with controlled limits.
-
-    Args:
-        X1 (np.array): First input array (e.g., left branch of Siamese input).
-        X2 (np.array): Second input array (e.g., right branch of Siamese input).
-        y (np.array): Labels array.
-        sampling_strategy (float): Fraction of the majority class to oversample.
-
-    Returns:
-        X1_resampled, X2_resampled, y_resampled: Resampled data and labels.
-    """
     flat_shape = (X1.shape[0], -1)
     X1_flat = X1.reshape(flat_shape)
     X2_flat = X2.reshape(flat_shape)
@@ -46,10 +33,8 @@ def apply_smote(X1, X2, y, sampling_strategy=1.0):
     smote = SMOTE(sampling_strategy=sampling_strategy, random_state=42)
     combined = np.hstack([X1_flat, X2_flat])
     
-    # Apply SMOTE with controlled sampling
     combined_resampled, y_resampled = smote.fit_resample(combined, y)
     
-    # Restore the paired input shape
     X1_resampled = combined_resampled[:, :X1_flat.shape[1]].reshape(-1, *X1.shape[1:])
     X2_resampled = combined_resampled[:, X1_flat.shape[1]:].reshape(-1, *X2.shape[1:])
     
@@ -61,6 +46,16 @@ datasets = {
         "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
         "train_writers": list(range(261, 300)),
         "test_writers": list(range(300, 316))
+    },
+    "BHSig260_Bengali": {
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
+        "train_writers": list(range(1, 36)),
+        "test_writers": list(range(36, 50))
+    },
+    "BHSig260_Hindi": {
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Hindi",
+        "train_writers": list(range(101, 160)),
+        "test_writers": list(range(160, 185))
     },
 }
 
@@ -84,21 +79,12 @@ def load_data_with_smote(dataset_name, dataset_config):
     display_class_distribution(train_labels)
 
     print("Applying SMOTE to balance the training data...")
-    train_X1, train_X2, train_labels = apply_smote(
-        train_X1, train_X2, train_labels, sampling_strategy=0.5
-    )  # Oversample to 50% of the majority class
+    train_X1, train_X2, train_labels = apply_smote(train_X1, train_X2, train_labels, sampling_strategy=1.0)
 
     print("Class distribution after SMOTE:")
     display_class_distribution(train_labels)
 
-    # Ensure data type compatibility with mixed precision
-    train_X1 = train_X1.astype('float16')
-    train_X2 = train_X2.astype('float16')
-    test_X1 = test_X1.astype('float16')
-    test_X2 = test_X2.astype('float16')
-
     return (train_X1, train_X2, train_labels), (test_X1, test_X2, test_labels)
-
 
 # Create datasets for TensorFlow
 def create_tf_dataset(X1, X2, labels, batch_size=8):
@@ -114,7 +100,6 @@ def compute_biometric_metrics(y_true, y_pred):
     recall = recall_score(y_true, y_pred_labels)
     f1 = f1_score(y_true, y_pred_labels)
 
-    # Biometric metrics: Genuine Acceptance Rate (GAR) and False Rejection Rate (FRR)
     gar = recall  # Equivalent to TPR for genuine samples
     frr = 1 - gar
 
@@ -130,63 +115,60 @@ def compute_biometric_metrics(y_true, y_pred):
 
 # Function to display class distribution
 def display_class_distribution(labels, label_names=['Genuine', 'Forged']):
-    """
-    Displays the class distribution for given labels.
-
-    Args:
-        labels (np.array): Array of labels (e.g., 1 for Genuine, 0 for Forged).
-        label_names (list): List of class names corresponding to labels.
-
-    Returns:
-        counts (list): List of counts for each class.
-    """
-    # Count occurrences for each class
     counts = [np.sum(labels == i) for i in range(len(label_names))]
-
-    # Print class distribution
     print("\n--- Class Distribution ---")
     for label_name, count in zip(label_names, counts):
         print(f"{label_name}: {count}")
-
     return counts
 
-# Example dataset labels (Replace with actual labels)
-# Assuming '1' is for Genuine and '0' is for Forged
-
-
 # Main Script
+all_train_X1, all_train_X2, all_train_labels = [], [], []
+all_test_X1, all_test_X2, all_test_labels = [], [], []
+
 for dataset_name, dataset_config in datasets.items():
     print(f"\n--- Processing Dataset: {dataset_name} ---")
-
-    # Load dataset with SMOTE
     (train_X1, train_X2, train_labels), (test_X1, test_X2, test_labels) = load_data_with_smote(dataset_name, dataset_config)
 
-    # Display class distribution for training labels
-    print(f"Class distribution for training data in {dataset_name}:")
-    train_class_counts = display_class_distribution(train_labels)
+    all_train_X1.append(train_X1)
+    all_train_X2.append(train_X2)
+    all_train_labels.append(train_labels)
 
-    # Display class distribution for testing labels
-    print(f"Class distribution for testing data in {dataset_name}:")
-    test_class_counts = display_class_distribution(test_labels)
+    all_test_X1.append(test_X1)
+    all_test_X2.append(test_X2)
+    all_test_labels.append(test_labels)
 
-    # Create TensorFlow datasets
-    train_dataset = create_tf_dataset(train_X1, train_X2, train_labels, batch_size=8)
-    test_dataset = create_tf_dataset(test_X1, test_X2, test_labels, batch_size=8)
+# Combine all datasets
+train_X1 = np.concatenate(all_train_X1, axis=0)
+train_X2 = np.concatenate(all_train_X2, axis=0)
+train_labels = np.concatenate(all_train_labels, axis=0)
+test_X1 = np.concatenate(all_test_X1, axis=0)
+test_X2 = np.concatenate(all_test_X2, axis=0)
+test_labels = np.concatenate(all_test_labels, axis=0)
 
-    # Create and compile model
-    model = create_siamese_network(input_shape=(155, 220, 1))
-    contrastive_loss = ContrastiveLoss(margin=1.0)
-    model.compile(optimizer=RMSprop(learning_rate=0.001), loss=contrastive_loss)
+print("\n--- Unified Dataset ---")
+print("Training Data Distribution:")
+display_class_distribution(train_labels)
+print("Testing Data Distribution:")
+display_class_distribution(test_labels)
 
-    # Train model
-    print(f"Training on {dataset_name}...")
-    start_time = time.time()
-    model.fit(train_dataset, epochs=5, verbose=1)
-    end_time = time.time()
+# Create TensorFlow datasets
+train_dataset = create_tf_dataset(train_X1, train_X2, train_labels, batch_size=8)
+test_dataset = create_tf_dataset(test_X1, test_X2, test_labels, batch_size=8)
 
-    # Evaluate model
-    print(f"Evaluating on {dataset_name}...")
-    y_pred = model.predict(test_dataset)
-    compute_biometric_metrics(test_labels, y_pred)
+# Create and compile model
+model = create_siamese_network(input_shape=(155, 220, 1))
+contrastive_loss = ContrastiveLoss(margin=1.0)
+model.compile(optimizer=RMSprop(learning_rate=0.001), loss=contrastive_loss)
 
-    print(f"Training and Evaluation Time: {end_time - start_time:.2f} seconds")
+# Train model
+print(f"\nTraining on Unified Dataset...")
+start_time = time.time()
+model.fit(train_dataset, epochs=5, verbose=1)
+end_time = time.time()
+
+# Evaluate model
+print("\nEvaluating on Unified Dataset...")
+y_pred = model.predict(test_dataset)
+compute_biometric_metrics(test_labels, y_pred)
+
+print(f"\nTraining and Evaluation Time: {end_time - start_time:.2f} seconds")
