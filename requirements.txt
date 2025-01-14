@@ -1,4 +1,7 @@
 numpy
 scikit-learn
 tensorflow
+tensorflow-macos
+tensorflow-metal
 psutil
+pillow

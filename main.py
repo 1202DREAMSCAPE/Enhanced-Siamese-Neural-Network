@@ -13,7 +13,7 @@ datasets = {
     "CEDAR": {
         "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
         "train_writers": list(range(261, 300)),
-        "test_writers": list(range(300, 316))
+        "test_writers": list(range(300, 315))
     },
     "BHSig260_Bengali": {
         "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
@@ -35,15 +35,15 @@ generator = SignatureDataGenerator(
 )
 
 # Load data
-train_data, train_labels = generator.load_data("train")
-test_data, test_labels = generator.load_data("test")
+train_data, train_labels = generator.get_train_data()
+test_data, test_labels = generator.get_test_data()
 
 # Create Siamese network
 model = create_siamese_network(input_shape=(155, 220, 1))
 model.compile(optimizer=RMSprop(learning_rate=0.001), loss="binary_crossentropy", metrics=["accuracy"])
 
 # Train model
-model.fit(train_data, train_labels, epochs=10, batch_size=32, validation_split=0.2)
+model.fit(train_data, train_labels, epochs=10, batch_size=16, validation_split=0.2)
 
 # Evaluate model
 y_pred = model.predict(test_data)
@@ -85,16 +85,16 @@ def monitor_computation(model, data):
     print(f"Time Taken: {elapsed_time:.2f} seconds")
     return predictions
 
-# Include hyperparameter sensitivity testing
-def evaluate_hyperparameters(model, train_data, val_data):
-    for lr in [0.01, 0.001, 0.0001]:
-        for batch_size in [16, 32, 64]:
-            print(f"Evaluating with Learning Rate: {lr}, Batch Size: {batch_size}")
-            model.compile(optimizer=RMSprop(learning_rate=lr), loss="binary_crossentropy", metrics=["accuracy"])
-            start_time = time.time()
-            model.fit(train_data, batch_size=batch_size, epochs=5, validation_data=val_data, verbose=0)
-            end_time = time.time()
-            print(f"Training Time: {end_time - start_time:.2f} seconds")
+# # Include hyperparameter sensitivity testing
+# def evaluate_hyperparameters(model, train_data, val_data):
+#     for lr in [0.01, 0.001, 0.0001]:
+#         for batch_size in [16, 32, 64]:
+#             print(f"Evaluating with Learning Rate: {lr}, Batch Size: {batch_size}")
+#             model.compile(optimizer=RMSprop(learning_rate=lr), loss="binary_crossentropy", metrics=["accuracy"])
+#             start_time = time.time()
+#             model.fit(train_data, batch_size=batch_size, epochs=5, validation_data=val_data, verbose=0)
+#             end_time = time.time()
+#             print(f"Training Time: {end_time - start_time:.2f} seconds")
 
 # Log metrics
 log_metrics(test_labels, y_pred_labels, y_pred)
@@ -108,4 +108,4 @@ log_metrics(test_labels, (noisy_predictions > 0.5).astype(int), noisy_prediction
 monitor_computation(model, test_data)
 
 # Hyperparameter evaluation (example)
-evaluate_hyperparameters(model, train_data, (test_data, test_labels))
+# evaluate_hyperparameters(model, train_data, (test_data, test_labels))
