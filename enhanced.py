@@ -45,18 +45,18 @@ datasets = {
     "CEDAR": {
         "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
         "train_writers": list(range(261, 300)),
-        "test_writers": list(range(300, 316))
+        "test_writers": list(range(300, 315))
     },
     "BHSig260_Bengali": {
         "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
-        "train_writers": list(range(1, 36)),
-        "test_writers": list(range(36, 50))
+        "train_writers": list(range(1, 71)),
+        "test_writers": list(range(71, 100))
     },
     "BHSig260_Hindi": {
         "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Hindi",
-        "train_writers": list(range(101, 160)),
-        "test_writers": list(range(160, 185))
-    },
+        "train_writers": list(range(101, 213)),
+        "test_writers": list(range(213, 260))
+    }
 }
 
 # Load dataset with SMOTE
