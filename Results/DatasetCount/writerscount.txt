@@ -1,0 +1,6 @@
+CEDAR: Train Writers = 39, Test Writers = 15
+BHSig260_Bengali: Train Writers = 70, Test Writers = 29
+BHSig260_Hindi: Train Writers = 112, Test Writers = 47
+
+Total Train Writers: 221
+Total Test Writers: 91
