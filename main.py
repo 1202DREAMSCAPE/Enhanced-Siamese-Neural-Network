@@ -1,53 +1,36 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import psutil
+import time
+import tensorflow as tf
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, roc_auc_score, roc_curve
 from tensorflow.keras.optimizers import RMSprop
 from SignatureDataGenerator import SignatureDataGenerator
 from SigNet_v1 import create_siamese_network
 from tensorflow.keras.losses import Loss
 import tensorflow.keras.backend as K
-import time
 
-# Define Contrastive Loss
-class ContrastiveLoss(Loss):
-    def __init__(self, margin=1.0, **kwargs):
-        """
-        Contrastive loss function for Siamese Network.
-
-        Args:
-            margin: The margin value for dissimilar pairs.
-        """
-        super(ContrastiveLoss, self).__init__(**kwargs)
-        self.margin = margin
-
-    def call(self, y_true, y_pred):
-        """
-        Compute the contrastive loss.
-
-        Args:
-            y_true: Ground truth labels (0 for similar, 1 for dissimilar).
-            y_pred: Predicted distances between embeddings.
-
-        Returns:
-            Loss value.
-        """
-        y_true = K.cast(y_true, y_pred.dtype)
-        positive_loss = (1 - y_true) * K.square(y_pred)
-        negative_loss = y_true * K.square(K.maximum(self.margin - y_pred, 0))
-        return K.mean(positive_loss + negative_loss)
+# Function for Triplet Loss
+def triplet_loss(margin=1.0):
+    def loss(y_true, y_pred):
+        anchor, positive, negative = y_pred[:, 0], y_pred[:, 1], y_pred[:, 2]
+        pos_dist = tf.reduce_sum(tf.square(anchor - positive), axis=-1)
+        neg_dist = tf.reduce_sum(tf.square(anchor - negative), axis=-1)
+        return tf.reduce_mean(tf.maximum(pos_dist - neg_dist + margin, 0.0))
+    return loss
 
 # Dataset Configuration
 datasets = {
-    # "CEDAR": {
-    #     "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
-    #     "train_writers": list(range(261, 300)),
-    #     "test_writers": list(range(300, 315))
-    # },
-    # "BHSig260_Bengali": {
-    #     "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
-    #     "train_writers": list(range(1, 71)),
-    #     "test_writers": list(range(71, 100))
-    # },
+    "CEDAR": {
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
+        "train_writers": list(range(261, 300)),
+        "test_writers": list(range(300, 315))
+    },
+    "BHSig260_Bengali": {
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
+        "train_writers": list(range(1, 71)),
+        "test_writers": list(range(71, 100))
+    },
     "BHSig260_Hindi": {
         "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Hindi",
         "train_writers": list(range(101, 213)),
@@ -73,40 +56,16 @@ def load_data(dataset_name, dataset_config):
 
     return train_data, train_labels, test_data, test_labels
 
-# Function to visualize class imbalance
-def plot_class_imbalance(train_labels, test_labels, dataset_name):
-    train_counts = np.bincount(train_labels)
-    test_counts = np.bincount(test_labels)
+# Compute scalability issues
+def compute_scalability_metrics(start_time, end_time, dataset_name):
+    execution_time = end_time - start_time
+    memory_usage = psutil.virtual_memory().percent  # Get memory usage
+    print(f"\n--- Scalability Metrics for {dataset_name} ---")
+    print(f"Training & Evaluation Time: {execution_time:.2f} seconds")
+    print(f"Memory Usage: {memory_usage:.2f}%")
 
-    print(f"Class Imbalance Summary for {dataset_name} Dataset:")
-    print(f"Training Data: {train_counts[0]} Genuine, {train_counts[1]} Forged")
-    print(f"Testing Data: {test_counts[0]} Genuine, {test_counts[1]} Forged")
-
-    labels = ['Genuine', 'Forged']
-    x = np.arange(len(labels))
-
-    plt.figure(figsize=(8, 5))
-    plt.bar(x - 0.2, train_counts, width=0.4, label='Train', color='blue', alpha=0.7)
-    plt.bar(x + 0.2, test_counts, width=0.4, label='Test', color='orange', alpha=0.7)
-    plt.xticks(x, labels)
-    plt.xlabel('Class')
-    plt.ylabel('Sample Count')
-    plt.title(f'Class Imbalance - {dataset_name}')
-    plt.legend()
-    plt.show()
-
-# Updated function to compute and display metrics
-def compute_metrics(y_true, y_pred, dataset_name):
-    """
-    Computes classification metrics and prints results.
-
-    Args:
-        y_true: Ground truth labels.
-        y_pred: Predicted probabilities.
-
-    Returns:
-        None
-    """
+# Compute noise sensitivity
+def compute_noise_sensitivity(y_true, y_pred, dataset_name):
     y_pred_labels = (y_pred > 0.5).astype(int)
     accuracy = accuracy_score(y_true, y_pred_labels)
     precision = precision_score(y_true, y_pred_labels)
@@ -117,8 +76,9 @@ def compute_metrics(y_true, y_pred, dataset_name):
     # Biometric-specific metrics
     gar = recall  # Genuine Acceptance Rate
     frr = 1 - gar  # False Rejection Rate
+    far = 1 - precision  # False Acceptance Rate
 
-    print("\n--- Evaluation Metrics ---")
+    print("\n--- Noise Sensitivity Metrics ---")
     print(f"Accuracy: {accuracy:.4f}")
     print(f"Precision: {precision:.4f}")
     print(f"Recall (GAR): {recall:.4f}")
@@ -126,9 +86,7 @@ def compute_metrics(y_true, y_pred, dataset_name):
     print(f"ROC-AUC: {auc:.4f}")
     print(f"Genuine Acceptance Rate (GAR): {gar:.4f}")
     print(f"False Rejection Rate (FRR): {frr:.4f}")
-
-    print("\nClassification Report:")
-    print(classification_report(y_true, y_pred_labels, target_names=["Genuine", "Forged"]))
+    print(f"False Acceptance Rate (FAR): {far:.4f}")
 
 # Function to plot ROC curve
 def plot_roc_curve(y_true, y_prob, dataset_name):
@@ -151,13 +109,10 @@ for dataset_name, dataset_config in datasets.items():
     # Load dataset
     train_data, train_labels, test_data, test_labels = load_data(dataset_name, dataset_config)
 
-    # Visualize class imbalance
-   # plot_class_imbalance(train_labels, test_labels, dataset_name)
-
     # Create and compile model
     model = create_siamese_network(input_shape=(155, 220, 1))
-    contrastive_loss = ContrastiveLoss(margin=1.0)
-    model.compile(optimizer=RMSprop(learning_rate=0.001), loss=contrastive_loss)
+    loss_function = triplet_loss(margin=1.0)
+    model.compile(optimizer=RMSprop(learning_rate=0.001), loss=loss_function)
 
     # Train model
     print(f"Training on {dataset_name}...")
@@ -169,11 +124,9 @@ for dataset_name, dataset_config in datasets.items():
     print(f"Evaluating on {dataset_name}...")
     y_pred = model.predict(test_data)
 
-    # Compute and display metrics
-    compute_metrics(test_labels, y_pred, dataset_name)
+    # Compute scalability & noise sensitivity metrics
+    compute_scalability_metrics(start_time, end_time, dataset_name)
+    compute_noise_sensitivity(test_labels, y_pred, dataset_name)
 
     # Plot ROC curve
     plot_roc_curve(test_labels, y_pred, dataset_name)
-
-    # Display execution time
-    print(f"Training and Evaluation Time: {end_time - start_time:.2f} seconds")
