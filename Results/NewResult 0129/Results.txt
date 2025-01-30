@@ -1,0 +1,73 @@
+--- Processing Dataset: CEDAR ---
+
+--- Class Imbalance in CEDAR ---
+Training Data - Genuine: 10764, Forged: 22464
+Test Data - Genuine: 4140, Forged: 8640
+Training on CEDAR...
+Epoch 1/5
+2025-01-30 12:45:04.405071: I tensorflow/core/grappler/optimizers/custom_graph_optimizer_registry.cc:117] Plugin optimizer for device_type GPU is enabled.
+3323/3323 ━━━━━━━━━━━━━━━━━━━━ 259s 77ms/step - loss: 32262.9805 - val_loss: 0.3269
+Epoch 2/5
+3323/3323 ━━━━━━━━━━━━━━━━━━━━ 258s 78ms/step - loss: 0.3207 - val_loss: 0.3269
+Epoch 3/5
+3323/3323 ━━━━━━━━━━━━━━━━━━━━ 249s 75ms/step - loss: 0.3250 - val_loss: 0.3269
+Epoch 4/5
+3323/3323 ━━━━━━━━━━━━━━━━━━━━ 247s 74ms/step - loss: 0.3250 - val_loss: 0.3269
+Epoch 5/5
+3323/3323 ━━━━━━━━━━━━━━━━━━━━ 251s 75ms/step - loss: 0.3237 - val_loss: 0.3269
+Evaluating on CEDAR...
+400/400 ━━━━━━━━━━━━━━━━━━━━ 16s 38ms/step  
+
+--- Scalability Metrics for CEDAR ---
+Training & Evaluation Time: 1275.60 seconds
+Memory Usage: 56.40%
+
+--- Noise Sensitivity Metrics ---
+Accuracy: 0.6761
+Precision: 0.0000
+Recall (GAR): 0.0000
+F1-Score: 0.0000
+ROC-AUC: 0.5000
+Genuine Acceptance Rate (GAR): 0.0000
+False Rejection Rate (FRR): 1.0000
+False Acceptance Rate (FAR): 1.0000
+
+--- Processing Dataset: BHSig260_Bengali ---
+
+--- Class Imbalance in BHSig260_Bengali ---
+Training Data - Genuine: 19320, Forged: 50400
+Test Data - Genuine: 8004, Forged: 20880
+Training on BHSig260_Bengali...
+Epoch 1/5
+6972/6972 ━━━━━━━━━━━━━━━━━━━━ 532s 76ms/step - loss: 0.3709 - val_loss: 0.2784
+Epoch 2/5
+6972/6972 ━━━━━━━━━━━━━━━━━━━━ 487s 70ms/step - loss: 0.2769 - val_loss: 0.2784
+Epoch 3/5
+6972/6972 ━━━━━━━━━━━━━━━━━━━━ 605s 87ms/step - loss: 0.2776 - val_loss: 0.2784
+Epoch 4/5
+6972/6972 ━━━━━━━━━━━━━━━━━━━━ 502s 72ms/step - loss: 0.2760 - val_loss: 0.2784
+Epoch 5/5
+6972/6972 ━━━━━━━━━━━━━━━━━━━━ 548s 79ms/step - loss: 0.2770 - val_loss: 0.2784
+Evaluating on BHSig260_Bengali...
+903/903 ━━━━━━━━━━━━━━━━━━━━ 39s 42ms/step  
+
+--- Scalability Metrics for BHSig260_Bengali ---
+Training & Evaluation Time: 2689.93 seconds
+Memory Usage: 39.70%
+
+--- Noise Sensitivity Metrics ---
+Accuracy: 0.7229
+Precision: 0.0000
+Recall (GAR): 0.0000
+F1-Score: 0.0000
+ROC-AUC: 0.5000
+Genuine Acceptance Rate (GAR): 0.0000
+False Rejection Rate (FRR): 1.0000
+False Acceptance Rate (FAR): 1.0000
+
+--- Processing Dataset: BHSig260_Hindi ---
+
+--- Class Imbalance in BHSig260_Hindi ---
+Training Data - Genuine: 30912, Forged: 80640
+Test Data - Genuine: 12972, Forged: 33840
+Training on BHSig260_Hindi...

@@ -6,3 +6,4 @@ tensorflow-metal
 psutil
 pillow
 matplotlib
+opencv-python
