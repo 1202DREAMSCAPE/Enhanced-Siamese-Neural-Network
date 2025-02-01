@@ -28,12 +28,20 @@ def triplet_loss(y_true, y_pred, alpha=0.2):
 
 # ✅ Dataset Configuration
 datasets = {
-    "CEDAR": { "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
-               "train_writers": list(range(261, 300)), "test_writers": list(range(300, 315)) },
-    "BHSig260_Bengali": { "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
-                          "train_writers": list(range(1, 71)), "test_writers": list(range(71, 100)) },
-    "BHSig260_Hindi": { "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Hindi",
-                        "train_writers": list(range(101, 213)), "test_writers": list(range(213, 260)) }
+    "CEDAR": { 
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/CEDAR",
+        "train_writers": list(range(261, 300)), 
+        "test_writers": list(range(300, 315)) },
+
+    "BHSig260_Bengali": { 
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Bengali",
+        "train_writers": list(range(1, 71)), 
+        "test_writers": list(range(71, 100)) },
+
+    "BHSig260_Hindi": {
+        "path": "/Users/christelle/Downloads/Thesis/Dataset/BHSig260_Hindi",
+        "train_writers": list(range(101, 169)),
+        "test_writers": list(range(170, 260))},
 }
 
 # ✅ Apply SMOTE for Class Balancing
@@ -87,7 +95,7 @@ for dataset_name, dataset_config in datasets.items():
     model = create_siamese_network(input_shape=(155, 220, 1))
     model.compile(optimizer=RMSprop(learning_rate=0.001), loss=triplet_loss)
 
-    model.fit(train_dataset, epochs=10, verbose=1)
+    model.fit(train_dataset, epochs=5, verbose=1)
     model.save(f"{dataset_name}_siamese_model.h5")
     print(f"Model saved as {dataset_name}_siamese_model.h5")
 
@@ -122,6 +130,6 @@ test_dataset = tf.data.Dataset.from_tensor_slices(((test_X1, test_X2), test_labe
 unified_model = create_siamese_network(input_shape=(155, 220, 1))
 unified_model.compile(optimizer=RMSprop(learning_rate=0.001), loss=triplet_loss)
 
-unified_model.fit(train_dataset, epochs=10, verbose=1)
+unified_model.fit(train_dataset, epochs=5, verbose=1)
 unified_model.save("unified_siamese_model.h5")
 print("Unified model saved as unified_siamese_model.h5")
